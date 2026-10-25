@@ -15,8 +15,6 @@ MCode Editor combines the performance of native Windows applications with the fl
 
 <img src="screenshot.png" alt="MCode Editor Screenshot" width="820">
 
-[Features](#-features) · [Tech Stack](#-tech-stack) · [Getting Started](#-getting-started) · [Architecture](#-architecture-overview) · [Roadmap](#-roadmap) · [Contributing](#-contributing)
-
 </div>
 
 ## Features
