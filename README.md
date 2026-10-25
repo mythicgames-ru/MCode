@@ -37,7 +37,7 @@ MCode Editor combines the performance of native Windows applications with the fl
 1. Clone the repository:
    ```bash
    git clone https://github.com/mythicgames-ru/MCode.git
-   cd MCode-Editor
+   cd MCode
    ```
 
 2. Build and run the application:
