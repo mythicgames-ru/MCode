@@ -6,7 +6,6 @@ A modern, lightweight desktop code editor built with C# (.NET 8) and WebView2.
 MCode Editor combines the performance of native Windows applications with the flexibility and modern UI capabilities of web technologies. It provides a sleek, dark-themed workspace with an integrated terminal, file explorer, and an extensible chat workspace.
 
 ![Editor UI](screenshot.png)
-*(Replace `screenshot.png` with an actual screenshot of your application)*
 
 ## Features
 
