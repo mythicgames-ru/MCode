@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 10" width="100%" height="100%" shape-rendering="crispEdges">
+  <style>
+    .font-grey { fill: #9b9b9b; }
+    .font-white { fill: #e3e3e3; }
+    .inner-shadow { fill: #4d4d4d; opacity: 0.3; }
+  </style>
+
+  <path class="inner-shadow" d="M3 5h1v3H3zm2 0h1v3H5zm4-1h3v1H9zm5 0h2v1H14zm0 3h2v1H14zm5-3h2v1H19zm0 3h2v1H19zm5-2h2v1H24zm0 3h2v1H24z" />
+
+  <path class="font-grey" d="M2 2h5v6h-1V4H5v4H4V4H3v4H2z" />
+
+  <g class="font-white" fill-rule="evenodd">
+    <path d="M8 3h4v1H9v3h4v1H8z" />
+    <path d="M13 3h4v1H13zm0 1h1v3H13zm3 0h1v3H16zm-3 3h4v1H13z" />
+    <path d="M21 2h1v2H21zm0 3h1v3H21zm-3-2h3v5h-3zm1 1v3h1V4z" />
+    <path d="M23 3h1v5H23zm1 0h3v1H24zm0 4h3v1H24zm0-2h2v1H24z" />
+  </g>
+</svg>

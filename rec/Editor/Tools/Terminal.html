@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="data:,">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; border:0; outline:0; }
+  html, body { height:100%; width:100%; overflow:hidden; }
+  body {
+    font-family: "Consolas", "Lucida Console", "Courier New", monospace;
+    background:#0c0c0c;
+    color:#cccccc;
+    font-size:14px;
+    line-height:1.25;
+    display:flex;
+    flex-direction:column;
+    user-select:text;
+    -webkit-user-select:text;
+  }
+  #output {
+    flex:1;
+    padding:8px 12px 4px 12px;
+    overflow-y:auto;
+    white-space:pre-wrap;
+    word-break:break-word;
+    scrollbar-width:thin;
+    scrollbar-color:#2a2a2a transparent;
+  }
+  #output::-webkit-scrollbar { width:10px; height:10px; }
+  #output::-webkit-scrollbar-track { background:transparent; }
+  #output::-webkit-scrollbar-thumb { background:#2a2a2a; border-radius:5px; }
+  #output::-webkit-scrollbar-thumb:hover { background:#3a3a3a; }
+
+  .line { display:block; white-space:pre-wrap; word-break:break-word; }
+
+  #inputLine {
+    display:flex;
+    align-items:center;
+    padding:0 12px 10px 12px;
+    flex:0 0 auto;
+  }
+  #prompt {
+    color:#cccccc;
+    white-space:pre;
+    user-select:none;
+  }
+  #cmd {
+    flex:1;
+    background:transparent;
+    color:#cccccc;
+    font-family:inherit;
+    font-size:inherit;
+    line-height:inherit;
+    padding:0 0 0 0;
+    margin-left:2px;
+    caret-color:#cccccc;
+  }
+  #cmd::selection { background:#264f78; }
+</style>
+</head>
+<body>
+
+<div id="output"></div>
+<div id="inputLine">
+  <span id="prompt">PS C:\&gt;</span>
+  <input id="cmd" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" />
+</div>
+
+<script>
+  window.parent.postMessage({ __toolReady: true }, "*");
+
+  const outputEl = document.getElementById("output");
+  const promptEl = document.getElementById("prompt");
+  const cmdEl    = document.getElementById("cmd");
+
+  let bannerShown = false;
+  let cwd = "";
+  let history = [];
+  let histIndex = -1;
+
+  function setPrompt() {
+    promptEl.textContent = "PS " + (cwd || "") + ">";
+  }
+
+  function appendText(text) {
+    if (text === undefined || text === null) return;
+    const s = String(text);
+    const lines = s.split(/\r?\n/);
+    for (const ln of lines) {
+      const el = document.createElement("span");
+      el.className = "line";
+      el.textContent = ln.length === 0 ? "\u00A0" : ln;
+      outputEl.appendChild(el);
+    }
+    outputEl.scrollTop = outputEl.scrollHeight;
+  }
+
+  function appendEcho(cmdText) {
+    const el = document.createElement("span");
+    el.className = "line";
+    el.textContent = "PS " + (cwd || "") + ">" + cmdText;
+    outputEl.appendChild(el);
+    outputEl.scrollTop = outputEl.scrollHeight;
+  }
+
+  function showBannerOnce() {
+    if (bannerShown) return;
+    bannerShown = true;
+    appendText("");
+    appendText("Windows PowerShell");
+    appendText("Copyright (C) Microsoft Corporation. All rights reserved.");
+    appendText("");
+    appendText("Try the new cross-platform PowerShell https://aka.ms/pscore6");
+    appendText("");
+  }
+
+  // ---------- приём от C# ----------
+  window.addEventListener("message", e => {
+    const msg = e.data;
+    if (!msg) return;
+    if (msg.__setting === "terminal.fontSize") {
+      const px = Number(msg.value) || 14;
+      document.body.style.fontSize = px + "px";
+      return;
+    }
+    if (!msg.__toolPush) return;
+    const p = msg.payload;
+    if (!p || p.type !== "terminal-output") return;
+    const data = p.data == null ? "" : String(p.data);
+
+    // маркер CWD — не показываем, обновляем prompt
+    const m = data.match(/__MYTHIC_CWD__:(.*)$/);
+    if (m) {
+      cwd = m[1].trim();
+      setPrompt();
+      return;
+    }
+    // маркер баннера
+    if (data.indexOf("__MYTHIC_BANNER__") >= 0) {
+      showBannerOnce();
+      return;
+    }
+
+    appendText(data);
+  });
+
+  // ---------- старт ----------
+  setPrompt();
+  window.parent.postMessage({
+    __toolRequest: true,
+    action: "terminal-start",
+    reqId: 0
+  }, "*");
+
+  // ---------- ввод ----------
+  cmdEl.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const line = cmdEl.value;
+      cmdEl.value = "";
+      appendEcho(" " + line);
+      if (line.trim()) {
+        history.push(line);
+        histIndex = history.length;
+        window.parent.postMessage({
+          __toolRequest: true,
+          action: "terminal-write",
+          reqId: 0,
+          line
+        }, "*");
+      } else {
+        // пустой Enter — просто новая строка (эмулируем поведение)
+        appendText("");
+      }
+      return;
+    }
+    // стрелка вверх/вниз — история
+    if (e.key === "ArrowUp") {
+      if (history.length === 0) return;
+      e.preventDefault();
+      if (histIndex > 0) histIndex--;
+      cmdEl.value = history[histIndex] || "";
+      setTimeout(() => cmdEl.setSelectionRange(cmdEl.value.length, cmdEl.value.length), 0);
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      if (history.length === 0) return;
+      e.preventDefault();
+      if (histIndex < history.length - 1) histIndex++;
+      else histIndex = history.length;
+      cmdEl.value = history[histIndex] || "";
+      setTimeout(() => cmdEl.setSelectionRange(cmdEl.value.length, cmdEl.value.length), 0);
+      return;
+    }
+  });
+
+  // ---------- фокус ----------
+  setTimeout(() => cmdEl.focus(), 100);
+  document.body.addEventListener("click", () => cmdEl.focus());
+  window.addEventListener("focus", () => cmdEl.focus());
+</script>
+</body>
+</html>

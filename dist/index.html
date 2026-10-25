@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Тест</title>
+  <style>
+    body { font-family: system-ui; background: #1e1e2e; color: #cdd6f4;
+           display: grid; place-items: center; height: 100vh; margin: 0; }
+    button { font-size: 18px; padding: 10px 24px; border: 0; border-radius: 8px;
+             background: #89b4fa; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div style="text-align:center">
+    <h1>Привет из index.html 👋</h1>
+    <p id="answer">Здесь появится ответ от C#</p>
+    <button onclick="window.chrome.webview.postMessage('привет, C#!')">Пингануть C#</button>
+  </div>
+  <script>
+    window.chrome.webview.addEventListener("message", e => {
+      document.getElementById("answer").textContent = e.data;
+    });
+  </script>
+</body>
+</html>

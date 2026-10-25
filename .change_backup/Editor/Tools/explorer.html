@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="data:,">
+<style>
+  @font-face {
+    font-family: "Google Sans";
+    src: url("/Fonts/GoogleSans/GoogleSans-Regular.ttf") format("truetype");
+    font-display: swap;
+  }
+
+  :root {
+    --bg: #0e0e0e;
+    --card-hover: #242424;
+    --text: #f0f0f0;
+    --text-dim: #8a8a8a;
+    --line: #2a2d33;
+    --sel: #333336;
+    --sel-dim: #232326;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; border: 0; outline: 0; }
+  html, body { height: 100%; width: 100%; overflow: hidden; }
+
+  body {
+    font-family: "Google Sans", "Segoe UI", system-ui, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    user-select: none;
+    -webkit-user-select: none;
+    overflow: auto;
+  }
+
+  .tree { padding: 6px 0; min-height: 100%; }
+
+  .tree-node { position: relative; }
+
+  .tree-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px 4px 4px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background .12s ease;
+  }
+  .tree-row:hover { background: var(--card-hover); }
+  .tree-row.selected { background: var(--sel); }
+  .tree-row.selected:hover { background: #3a3a3d; }
+
+  .tree-row.is-empty-dir { cursor: default; }
+  .tree-row.is-empty-dir:hover { background: transparent; }
+  .tree-row.is-empty-dir.selected { background: var(--sel); }
+  .tree-row.is-empty-dir.selected:hover { background: #3a3a3d; }
+
+  .tree-arrow {
+    flex: 0 0 auto;
+    display: block;
+    width: 12px;
+    height: 12px;
+    background-color: var(--text-dim);
+    -webkit-mask: url("/Icons/explorer_arrow.svg") no-repeat center / contain;
+    mask: url("/Icons/explorer_arrow.svg") no-repeat center / contain;
+    transition: transform .15s ease, background-color .15s ease;
+  }
+  .tree-row:hover > .tree-arrow { background-color: var(--text); }
+  .tree-node.expanded > .tree-row > .tree-arrow { transform: rotate(90deg); }
+  .tree-arrow.invisible { visibility: hidden; }
+
+  .tree-icon {
+    flex: 0 0 auto;
+    display: block;
+    width: 16px;
+    height: 16px;
+    background-color: var(--text-dim);
+    -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+    -webkit-mask-position: center;  mask-position: center;
+    -webkit-mask-size: contain;     mask-size: contain;
+  }
+  .tree-icon.folder { -webkit-mask-image: url("/Icons/editor_folder.svg"); mask-image: url("/Icons/editor_folder.svg"); }
+  .tree-icon.file   { -webkit-mask-image: url("/Icons/editor_draft.svg");  mask-image: url("/Icons/editor_draft.svg"); }
+
+  .tree-name { overflow: hidden; text-overflow: ellipsis; }
+
+  /* дети + линии иерархии — линия выровнена под иконкой папки родителя */
+  .tree-children { display: none; padding-left: 22px; }
+  .tree-node.expanded > .tree-children { display: block; }
+
+  .tree-children > .tree-node::before {
+    content: "";
+    position: absolute;
+    left: 4px;   /* 22px(отступ) + 4px = 26px от корня дерева, т.е. центр иконки родителя */
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--line);
+  }
+  .tree-children > .tree-node:last-child::before {
+    bottom: auto;
+    height: 12px;   /* половина строки, чтобы линия не шла дальше последнего */
+  }
+
+  .tree-children > .tree-node::after {
+    content: "";
+    position: absolute;
+    left: 4px;
+    top: 12px;
+    width: 14px;
+    height: 1px;
+    background: var(--line);
+  }
+
+  .tree-error { padding: 10px 12px; color: var(--text-dim); font-size: 12.5px; }
+  .tree-empty { padding: 4px 12px; color: var(--text-dim); font-size: 12px; }
+
+  /* ---------- контекстное меню ---------- */
+  #ctx {
+    position: fixed;
+    min-width: 210px;
+    padding: 6px;
+    background: #1a1a1a;
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--text);
+    box-shadow: 0 14px 40px rgba(0,0,0,.6);
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(.97);
+    transform-origin: top left;
+    transition: opacity .15s ease, transform .15s ease;
+    z-index: 1000;
+  }
+  #ctx.show { opacity: 1; pointer-events: auto; transform: scale(1); }
+
+  .ctx-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .12s ease;
+  }
+  .ctx-item:hover { background: var(--card-hover); }
+  .ctx-sep { height: 1px; background: #2a2a2a; margin: 4px 8px; }
+  .ctx-item.disabled { opacity: .3; pointer-events: none; }
+  .ctx-arrow { color: var(--text-dim); font-size: 14px; line-height: 1; }
+  .ctx-shortcut { color: var(--text-dim); font-size: 11.5px; }
+
+  .ctx-sub {
+    position: absolute;
+    left: 100%;
+    top: -6px;
+    margin-left: 4px;
+    min-width: 130px;
+    padding: 6px;
+    background: #1a1a1a;
+    border-radius: 10px;
+    box-shadow: 0 14px 40px rgba(0,0,0,.6);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .15s ease;
+    z-index: 1001;
+  }
+  .ctx-item.has-sub:hover > .ctx-sub { opacity: 1; pointer-events: auto; }
+
+  /* ---------- модал ---------- */
+  #modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.5);
+    display: none; align-items: center; justify-content: center;
+    z-index: 2000;
+  }
+  #modal-backdrop.show { display: flex; }
+  .modal {
+    width: 340px; padding: 18px;
+    background: #1c1c1f; border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.7);
+  }
+  .modal-title { font-size: 14px; font-weight: 500; margin-bottom: 12px; color: #f0f0f0; }
+  .modal-input {
+    width: 100%; padding: 10px 12px;
+    background: #0f0f10; color: #f0f0f0;
+    font-family: inherit; font-size: 13px; border-radius: 8px;
+  }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  .modal-btn {
+    padding: 8px 14px; background: #262628; color: #f0f0f0;
+    font-family: inherit; font-size: 13px; border-radius: 8px;
+    cursor: pointer; transition: background .12s ease;
+  }
+  .modal-btn:hover { background: #303034; }
+  .modal-btn.primary { background: #4a4a4d; }
+  .modal-btn.primary:hover { background: #5a5a5d; }
+</style>
+</head>
+<body>
+  <div class="tree" id="tree"></div>
+
+  <div id="ctx">
+    <div class="ctx-item" data-act="open"><span>Open</span></div>
+    <div class="ctx-item" data-act="system-open"><span>Open in system Explorer</span></div>
+    <div class="ctx-item has-sub" data-act="create">
+      <span>Create</span>
+      <span class="ctx-arrow">›</span>
+      <div class="ctx-sub">
+        <div class="ctx-item" data-act="create-file"><span>File</span></div>
+        <div class="ctx-item" data-act="create-folder"><span>Folder</span></div>
+      </div>
+    </div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" data-act="copy"><span>Copy</span><span class="ctx-shortcut">Ctrl+C</span></div>
+    <div class="ctx-item" data-act="cut"><span>Cut</span><span class="ctx-shortcut">Ctrl+X</span></div>
+    <div class="ctx-item" data-act="paste"><span>Paste</span><span class="ctx-shortcut">Ctrl+V</span></div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" data-act="rename"><span>Rename</span><span class="ctx-shortcut">F2</span></div>
+    <div class="ctx-item" data-act="delete"><span>Delete</span><span class="ctx-shortcut">Del</span></div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" data-act="properties"><span>Properties</span></div>
+  </div>
+
+  <div id="modal-backdrop">
+    <div class="modal">
+      <div class="modal-title" id="modal-title">Rename</div>
+      <input class="modal-input" id="modal-input" type="text" spellcheck="false">
+      <div class="modal-actions">
+        <button class="modal-btn" id="modal-cancel">Cancel</button>
+        <button class="modal-btn primary" id="modal-ok">OK</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const treeEl = document.getElementById("tree");
+  let rootPath = "";
+
+  let reqCounter = 0;
+  const pending = new Map();
+
+  function request(action, params = {}) {
+    const reqId = ++reqCounter;
+    return new Promise(resolve => {
+      pending.set(reqId, resolve);
+      window.parent.postMessage(
+        { __toolRequest: true, action, reqId, ...params }, "*");
+    });
+  }
+
+  window.addEventListener("message", e => {
+    const msg = e.data;
+    if (!msg) return;
+    if (msg.__toolReply) {
+      const res = pending.get(msg.reqId);
+      if (res) { pending.delete(msg.reqId); res(msg.payload); }
+      return;
+    }
+    if (msg.__toolPush) {
+      if (msg.payload && msg.payload.type === "fs-changed") refreshAll();
+      return;
+    }
+    if (msg.__toolInit) {
+      rootPath = (msg.data && msg.data.root) || "";
+      init();
+    }
+  });
+
+  window.parent.postMessage({ __toolReady: true }, "*");
+
+  function escapeHtml(s) {
+    const d = document.createElement("div");
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  // ---------- рендер дерева ----------
+  function fillTree(container, entries) {
+    container.innerHTML = "";
+
+    if (!entries || entries.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "tree-empty";
+      empty.textContent = "(пусто)";
+      container.appendChild(empty);
+      return;
+    }
+
+    for (const entry of entries) {
+      const node = document.createElement("div");
+      node.className = "tree-node";
+
+      const row = document.createElement("div");
+      row.className = "tree-row";
+      row.dataset.path = entry.path;
+      row.dataset.isdir = entry.isDir ? "true" : "false";
+      row.dataset.haschildren = entry.hasChildren ? "true" : "false";
+
+      const arrow = document.createElement("span");
+      arrow.className = "tree-arrow";
+      if (!entry.isDir || !entry.hasChildren) arrow.classList.add("invisible");
+
+      if (entry.isDir && !entry.hasChildren) row.classList.add("is-empty-dir");
+
+      const icon = document.createElement("span");
+      icon.className = "tree-icon " + (entry.isDir ? "folder" : "file");
+
+      const name = document.createElement("span");
+      name.className = "tree-name";
+      name.textContent = entry.name;
+
+      row.appendChild(arrow);
+      row.appendChild(icon);
+      row.appendChild(name);
+
+      const children = document.createElement("div");
+      children.className = "tree-children";
+
+      node.appendChild(row);
+      node.appendChild(children);
+      container.appendChild(node);
+    }
+  }
+
+  async function init() {
+    const res = await request("list-dir", { path: rootPath });
+    if (res.error) {
+      treeEl.innerHTML = `<div class="tree-error">${escapeHtml(res.error)}</div>`;
+      return;
+    }
+    fillTree(treeEl, res.entries);
+  }
+
+  // ---------- выделение ----------
+  const selected = new Set();
+  let lastClickedPath = null;
+
+  function refreshSelection() {
+    treeEl.querySelectorAll(".tree-row").forEach(r => {
+      r.classList.toggle("selected", selected.has(r.dataset.path));
+    });
+  }
+
+  function getVisibleRows() {
+    return [...treeEl.querySelectorAll(".tree-row")].filter(r => r.offsetParent !== null);
+  }
+
+  function handleRowClick(row, e) {
+    const path = row.dataset.path;
+    if (e.ctrlKey || e.metaKey) {
+      if (selected.has(path)) selected.delete(path);
+      else selected.add(path);
+      lastClickedPath = path;
+    } else if (e.shiftKey && lastClickedPath) {
+      const rows = getVisibleRows();
+      const i1 = rows.findIndex(r => r.dataset.path === lastClickedPath);
+      const i2 = rows.findIndex(r => r.dataset.path === path);
+      if (i1 >= 0 && i2 >= 0) {
+        const a = Math.min(i1, i2), b = Math.max(i1, i2);
+        selected.clear();
+        for (let i = a; i <= b; i++) selected.add(rows[i].dataset.path);
+      }
+    } else {
+      selected.clear();
+      selected.add(path);
+      lastClickedPath = path;
+    }
+    refreshSelection();
+  }
+
+  async function toggleExpand(row) {
+    const node = row.parentElement;
+    const children = node.querySelector(":scope > .tree-children");
+    if (node.classList.contains("expanded")) {
+      node.classList.remove("expanded");
+      return;
+    }
+    if (!node.dataset.loaded) {
+      const res = await request("list-dir", { path: row.dataset.path });
+      if (res.error) {
+        children.innerHTML = `<div class="tree-error">${escapeHtml(res.error)}</div>`;
+      } else {
+        fillTree(children, res.entries);
+      }
+      node.dataset.loaded = "1";
+    }
+    node.classList.add("expanded");
+    refreshSelection();
+  }
+
+  async function openFile(path) {
+    const res = await request("read-file", { path });
+    if (res.error) { console.warn("read-file:", res.error); return; }
+    window.parent.postMessage({
+      __toolAction: "open-code-preview",
+      path: res.path, name: res.name, content: res.content
+    }, "*");
+  }
+
+  // ---------- клики ----------
+  let lastClickTime = 0;
+  let lastClickPath = null;
+
+  treeEl.addEventListener("click", async e => {
+    if (e.target === treeEl) {
+      selected.clear();
+      refreshSelection();
+      lastClickedPath = null;
+      return;
+    }
+    const row = e.target.closest(".tree-row");
+    if (!row) return;
+    const path = row.dataset.path;
+    const isDir = row.dataset.isdir === "true";
+
+    const now = Date.now();
+    const isDouble = lastClickPath === path && (now - lastClickTime) < 400;
+    lastClickTime = now;
+    lastClickPath = path;
+
+    if (e.target.classList.contains("tree-arrow")) {
+      if (isDir && row.dataset.haschildren === "true") await toggleExpand(row);
+      return;
+    }
+
+    handleRowClick(row, e);
+
+    if (isDouble) {
+      if (isDir) {
+        if (row.dataset.haschildren === "true") await toggleExpand(row);
+      } else await openFile(path);
+      return;
+    }
+
+    if (isDir && row.dataset.haschildren === "true" && !e.ctrlKey && !e.shiftKey) {
+      await toggleExpand(row);
+    }
+  });
+
+  document.body.addEventListener("mousedown", e => {
+    if (!treeEl.contains(e.target)) {
+      selected.clear();
+      refreshSelection();
+      lastClickedPath = null;
+    }
+  });
+
+  // ---------- контекстное меню ----------
+  const ctx = document.getElementById("ctx");
+  let ctxOpen = false;
+  let ctxTarget = null; // { path, isDir, name, expanded, multi } | { empty:true }
+
+  treeEl.addEventListener("contextmenu", e => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const row = e.target.closest(".tree-row");
+
+    if (!row) {
+      // ПКМ по пустоте → Create в корне проекта
+      ctxTarget = { empty: true };
+      showCtx(e.clientX, e.clientY, false);
+      return;
+    }
+
+    // если кликнули по невыделенному — выделяем только его
+    if (!selected.has(row.dataset.path)) {
+      selected.clear();
+      selected.add(row.dataset.path);
+      lastClickedPath = row.dataset.path;
+      refreshSelection();
+    }
+
+    ctxTarget = {
+      path: row.dataset.path,
+      isDir: row.dataset.isdir === "true",
+      name: row.querySelector(".tree-name").textContent,
+      expanded: row.parentElement.classList.contains("expanded"),
+      hasChildren: row.dataset.haschildren === "true",
+      multi: selected.size > 1
+    };
+    showCtx(e.clientX, e.clientY, true);
+  });
+
+  function showCtx(x, y, onRow) {
+    const openItem = ctx.querySelector('[data-act="open"]');
+    const sysItem = ctx.querySelector('[data-act="system-open"]');
+    const createItem = ctx.querySelector('[data-act="create"]');
+    const copyItem = ctx.querySelector('[data-act="copy"]');
+    const cutItem = ctx.querySelector('[data-act="cut"]');
+    const pasteItem = ctx.querySelector('[data-act="paste"]');
+    const renameItem = ctx.querySelector('[data-act="rename"]');
+    const deleteItem = ctx.querySelector('[data-act="delete"]');
+    const propsItem = ctx.querySelector('[data-act="properties"]');
+
+    // сброс
+    [openItem, sysItem, createItem, copyItem, cutItem, pasteItem, renameItem, deleteItem, propsItem]
+      .forEach(el => el.classList.remove("disabled"));
+
+    if (ctxTarget && ctxTarget.empty) {
+      // только Create (+ Paste, если есть что вставлять)
+      openItem.classList.add("disabled");
+      sysItem.classList.add("disabled");
+      copyItem.classList.add("disabled");
+      cutItem.classList.add("disabled");
+      renameItem.classList.add("disabled");
+      deleteItem.classList.add("disabled");
+      propsItem.classList.add("disabled");
+      if (!clipboard.paths.length) pasteItem.classList.add("disabled");
+      createItem.classList.remove("disabled");
+    } else if (ctxTarget) {
+      // Open / Close
+      const openSpan = openItem.querySelector("span");
+      openSpan.textContent = (ctxTarget.isDir && ctxTarget.expanded) ? "Close" : "Open";
+
+      // мультивыделение — Rename и Properties недоступны
+      if (ctxTarget.multi) {
+        renameItem.classList.add("disabled");
+        propsItem.classList.add("disabled");
+      }
+      // Create только для одиночной папки
+      if (!ctxTarget.isDir || ctxTarget.multi) createItem.classList.add("disabled");
+      // Paste только в одиночную папку при наличии буфера
+      if (!ctxTarget.isDir || !clipboard.paths.length || ctxTarget.multi)
+        pasteItem.classList.add("disabled");
+    }
+
+    ctx.classList.add("show");
+    const rect = ctx.getBoundingClientRect();
+    const maxX = window.innerWidth  - rect.width  - 6;
+    const maxY = window.innerHeight - rect.height - 6;
+    ctx.style.left = Math.min(x, maxX) + "px";
+    ctx.style.top  = Math.min(y, maxY) + "px";
+    ctxOpen = true;
+  }
+
+  function hideCtx() { ctx.classList.remove("show"); ctxOpen = false; ctxTarget = null; }
+
+  document.addEventListener("mousedown", e => {
+    if (ctxOpen && !ctx.contains(e.target)) hideCtx();
+  });
+  window.addEventListener("blur", hideCtx);
+  window.addEventListener("resize", hideCtx);
+  window.addEventListener("wheel", hideCtx, { passive: true });
+
+  // ---------- буфер обмена / undo ----------
+  const clipboard = { paths: [], cut: false };
+  const undoStack = [];
+  const redoStack = [];
+
+  function pushUndo(entry) {
+    undoStack.push(entry);
+    if (undoStack.length > 200) undoStack.shift();
+    redoStack.length = 0;
+  }
+
+  async function doUndo() {
+    if (!undoStack.length) return;
+    const entry = undoStack.pop();
+    redoStack.push(entry);
+    await entry.undo();
+    await refreshAll();
+  }
+
+  async function doRedo() {
+    if (!redoStack.length) return;
+    const entry = redoStack.pop();
+    undoStack.push(entry);
+    await entry.redo();
+    await refreshAll();
+  }
+
+  // ---------- обработчики действий ----------
+  ctx.querySelectorAll("[data-act]").forEach(el =>
+    el.addEventListener("click", async e => {
+      e.stopPropagation();
+      const act = el.dataset.act;
+      if (el.classList.contains("disabled")) return;
+
+      const t = ctxTarget;
+
+      // для подменю Create — не закрываем сразу
+      if (act === "create") return;
+
+      hideCtx();
+
+      switch (act) {
+        case "open":
+          if (!t) return;
+          if (t.isDir) {
+            const row = [...treeEl.querySelectorAll(".tree-row")].find(r => r.dataset.path === t.path);
+            if (row) await toggleExpand(row);
+          } else {
+            await openFile(t.path);
+          }
+          break;
+
+        case "system-open":
+          if (!t || t.empty) return;
+          await request("system-open", { path: t.path });
+          break;
+
+        case "create-file":
+        case "create-folder": {
+          const parentDir = (t && t.path) ? t.path : rootPath;
+          const isDir = act === "create-folder";
+          const name = await promptText(isDir ? "New folder name" : "New file name", isDir ? "New Folder" : "new_file.txt");
+          if (!name) return;
+          const res = await request("create-entry",
+            { parent: parentDir, name: name.trim(), isDir });
+          if (res && res.error) console.warn("create:", res.error);
+          else {
+            const createdPath = parentDir.replace(/\\?$/, "\\") + name.trim();
+            pushUndo({
+              undo: async () => { await request("delete-file", { path: createdPath }); },
+              redo: async () => { await request("create-entry", { parent: parentDir, name: name.trim(), isDir }); }
+            });
+          }
+          await refreshAll();
+          break;
+        }
+
+        case "copy":
+          if (!t || t.empty || t.multi) {
+            if (selected.size === 0) return;
+          }
+          clipboard.paths = [...selected];
+          clipboard.cut = false;
+          break;
+
+        case "cut":
+          if (selected.size === 0) return;
+          clipboard.paths = [...selected];
+          clipboard.cut = true;
+          break;
+
+        case "paste": {
+          if (!clipboard.paths.length) return;
+          let targetDir = rootPath;
+          if (t && t.path && t.isDir) targetDir = t.path;
+          for (const src of clipboard.paths) {
+            const res = await request("copy-entry",
+              { source: src, targetDir, move: clipboard.cut });
+            if (res && res.error) console.warn("paste:", res.error);
+          }
+          if (clipboard.cut) clipboard.paths = [];
+          await refreshAll();
+          break;
+        }
+
+        case "rename": {
+          if (!t || t.empty || t.multi) return;
+          const newName = await promptText("Rename", t.name);
+          if (!newName) return;
+          const trimmed = newName.trim();
+          if (!trimmed || trimmed === t.name) return;
+          const res = await request("rename-file", { path: t.path, newName: trimmed });
+          if (res && res.error) {
+            console.warn("rename:", res.error);
+            alert("Rename failed: " + res.error);
+          } else {
+            const parentDir = t.path.substring(0, t.path.length - t.name.length).replace(/[\\/]$/, "");
+            const oldPath = t.path;
+            const newPath = (parentDir ? parentDir + "\\" : "") + trimmed;
+            pushUndo({
+              undo: async () => { await request("rename-file", { path: newPath, newName: t.name }); },
+              redo: async () => { await request("rename-file", { path: oldPath, newName: trimmed }); }
+            });
+          }
+          await refreshAll();
+          break;
+        }
+
+        case "delete": {
+          if (selected.size === 0) return;
+          const names = [...selected].map(p => p.split(/[\\/]/).pop()).join(", ");
+          const ok = await confirmDialog("Delete", `Delete ${selected.size} item(s)?\n${names}`);
+          if (!ok) return;
+          for (const p of selected) {
+            await request("delete-file", { path: p });
+          }
+          selected.clear();
+          refreshSelection();
+          await refreshAll();
+          break;
+        }
+
+        case "properties":
+          if (!t || t.empty || t.multi) return;
+          await request("properties", { path: t.path });
+          break;
+      }
+    }));
+
+  // ---------- модал: input ----------
+  const backdrop = document.getElementById("modal-backdrop");
+  const modalTitle = document.getElementById("modal-title");
+  const modalInput = document.getElementById("modal-input");
+  const modalOk = document.getElementById("modal-ok");
+  const modalCancel = document.getElementById("modal-cancel");
+
+  function promptText(title, initial) {
+    return new Promise(resolve => {
+      modalTitle.textContent = title;
+      modalInput.value = initial || "";
+      backdrop.classList.add("show");
+      setTimeout(() => { modalInput.focus(); modalInput.select(); }, 30);
+
+      const cleanup = () => {
+        backdrop.classList.remove("show");
+        modalOk.removeEventListener("click", onOk);
+        modalCancel.removeEventListener("click", onCancel);
+        modalInput.removeEventListener("keydown", onKey);
+      };
+      const onOk = () => { const v = modalInput.value; cleanup(); resolve(v); };
+      const onCancel = () => { cleanup(); resolve(null); };
+      const onKey = e => {
+        if (e.key === "Enter") { e.preventDefault(); onOk(); }
+        else if (e.key === "Escape") { e.preventDefault(); onCancel(); }
+      };
+
+      modalOk.addEventListener("click", onOk);
+      modalCancel.addEventListener("click", onCancel);
+      modalInput.addEventListener("keydown", onKey);
+    });
+  }
+
+  function confirmDialog(title, message) {
+    return new Promise(resolve => {
+      modalTitle.textContent = title + " — " + message;
+      modalInput.style.display = "none";
+      backdrop.classList.add("show");
+
+      const cleanup = () => {
+        backdrop.classList.remove("show");
+        modalInput.style.display = "";
+        modalOk.removeEventListener("click", onOk);
+        modalCancel.removeEventListener("click", onCancel);
+        document.removeEventListener("keydown", onKey);
+      };
+      const onOk = () => { cleanup(); resolve(true); };
+      const onCancel = () => { cleanup(); resolve(false); };
+      const onKey = e => { if (e.key === "Escape") onCancel(); else if (e.key === "Enter") onOk(); };
+
+      modalOk.addEventListener("click", onOk);
+      modalCancel.addEventListener("click", onCancel);
+      document.addEventListener("keydown", onKey);
+    });
+  }
+
+  // ---------- горячие клавиши ----------
+  document.addEventListener("keydown", async e => {
+    const ctrl = e.ctrlKey || e.metaKey;
+    const focused = document.activeElement;
+    // не мешаем вводу в модалке
+    if (focused === modalInput) return;
+
+    if (ctrl && e.key.toLowerCase() === "c") {
+      if (!selected.size) return;
+      clipboard.paths = [...selected];
+      clipboard.cut = false;
+      e.preventDefault();
+      return;
+    }
+    if (ctrl && e.key.toLowerCase() === "x") {
+      if (!selected.size) return;
+      clipboard.paths = [...selected];
+      clipboard.cut = true;
+      e.preventDefault();
+      return;
+    }
+    if (ctrl && e.key.toLowerCase() === "v") {
+      if (!clipboard.paths.length) return;
+      let targetDir = rootPath;
+      // если выделена одна папка — вставляем в неё
+      if (selected.size === 1) {
+        const p = [...selected][0];
+        const row = [...treeEl.querySelectorAll(".tree-row")].find(r => r.dataset.path === p);
+        if (row && row.dataset.isdir === "true") targetDir = p;
+      }
+      for (const src of clipboard.paths) {
+        await request("copy-entry", { source: src, targetDir, move: clipboard.cut });
+      }
+      if (clipboard.cut) clipboard.paths = [];
+      await refreshAll();
+      e.preventDefault();
+      return;
+    }
+    if (ctrl && e.key.toLowerCase() === "a") {
+      selected.clear();
+      getVisibleRows().forEach(r => selected.add(r.dataset.path));
+      refreshSelection();
+      e.preventDefault();
+      return;
+    }
+    if (ctrl && e.key.toLowerCase() === "z" && !e.shiftKey) {
+      await doUndo();
+      e.preventDefault();
+      return;
+    }
+    if (ctrl && (e.key.toLowerCase() === "y" ||
+                (e.key.toLowerCase() === "z" && e.shiftKey))) {
+      await doRedo();
+      e.preventDefault();
+      return;
+    }
+    if (e.key === "F2" && selected.size === 1) {
+      const p = [...selected][0];
+      const row = [...treeEl.querySelectorAll(".tree-row")].find(r => r.dataset.path === p);
+      if (!row) return;
+      const oldName = row.querySelector(".tree-name").textContent;
+      const newName = await promptText("Rename", oldName);
+      if (!newName) return;
+      const trimmed = newName.trim();
+      if (!trimmed || trimmed === oldName) return;
+      const res = await request("rename-file", { path: p, newName: trimmed });
+      if (res && res.error) alert("Rename failed: " + res.error);
+      else {
+        const parentDir = p.substring(0, p.length - oldName.length).replace(/[\\/]$/, "");
+        const newPath = (parentDir ? parentDir + "\\" : "") + trimmed;
+        pushUndo({
+          undo: async () => { await request("rename-file", { path: newPath, newName: oldName }); },
+          redo: async () => { await request("rename-file", { path: p, newName: trimmed }); }
+        });
+      }
+      await refreshAll();
+      e.preventDefault();
+      return;
+    }
+    if (e.key === "Delete" && selected.size > 0) {
+      const names = [...selected].map(p => p.split(/[\\/]/).pop()).join(", ");
+      const ok = await confirmDialog("Delete", `Delete ${selected.size} item(s)?\n${names}`);
+      if (!ok) return;
+      for (const p of selected) await request("delete-file", { path: p });
+      selected.clear();
+      refreshSelection();
+      await refreshAll();
+      e.preventDefault();
+      return;
+    }
+    if (e.key === "Escape") {
+      selected.clear();
+      refreshSelection();
+      lastClickedPath = null;
+    }
+  });
+
+  // ---------- обновление ----------
+  async function refreshAll() {
+    const expanded = [];
+    treeEl.querySelectorAll(".tree-node.expanded").forEach(n => {
+      const r = n.querySelector(":scope > .tree-row");
+      if (r) expanded.push(r.dataset.path);
+    });
+
+    const res = await request("list-dir", { path: rootPath });
+    if (res.error) return;
+    fillTree(treeEl, res.entries);
+    refreshSelection();
+
+    for (const path of expanded) await expandToPath(path);
+  }
+
+  async function expandToPath(path) {
+    let target = null;
+    for (const node of treeEl.querySelectorAll(".tree-node")) {
+      const r = node.querySelector(":scope > .tree-row");
+      if (r && r.dataset.path === path) { target = node; break; }
+    }
+    if (!target) return;
+
+    const children = target.querySelector(":scope > .tree-children");
+    if (!target.dataset.loaded) {
+      const res = await request("list-dir", { path });
+      if (!res.error) fillTree(children, res.entries);
+      target.dataset.loaded = "1";
+    }
+    target.classList.add("expanded");
+  }
+</script>
+</body>
+</html>

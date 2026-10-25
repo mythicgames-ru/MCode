@@ -1,0 +1,5 @@
+D:\code\bin\Release\net8.0-windows\win-x64\publish\App.pdb
+D:\code\bin\Release\net8.0-windows\win-x64\publish\Microsoft.Web.WebView2.Core.xml
+D:\code\bin\Release\net8.0-windows\win-x64\publish\Microsoft.Web.WebView2.WinForms.xml
+D:\code\bin\Release\net8.0-windows\win-x64\publish\Microsoft.Web.WebView2.Wpf.xml
+D:\code\bin\Release\net8.0-windows\win-x64\publish\App.exe

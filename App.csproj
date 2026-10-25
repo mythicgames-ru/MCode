@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Main\index.html" />
+    <EmbeddedResource Include="Editor\index.html" />
+    <EmbeddedResource Include="Editor\Tools\explorer.html" />
+    <EmbeddedResource Include="Editor\Tools\chat.html" />
+    <EmbeddedResource Include="Editor\Tools\CodePreview.html" />
+    <EmbeddedResource Include="Editor\Tools\Terminal.html" />
+    <EmbeddedResource Include="Editor\HighLight\**\*" />
+    <EmbeddedResource Include="Icons\**\*" />
+    <EmbeddedResource Include="Fonts\**\*" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <!-- Авто-исключение бэкап-папки rec/ из сборки (иначе CS0101/CS0111) -->
+    <Compile          Remove="rec\**\*" />
+    <EmbeddedResource Remove="rec\**\*" />
+    <None             Remove="rec\**\*" />
+  </ItemGroup>
+</Project>

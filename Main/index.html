@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8"><link rel="icon" href="data:,">
+<title>AgentApp</title>
+<style>
+@font-face{font-family:"Google Sans";src:url("/Fonts/GoogleSans/GoogleSans-Regular.ttf") format("truetype");font-display:swap}
+:root{--bg:#0e0e0e;--card:#1a1a1a;--card-hover:#242424;--text:#f0f0f0;--text-dim:#8a8a8a;--divider:#262626;--danger:#d84c4c}
+*{box-sizing:border-box;margin:0;padding:0;border:0;outline:0}
+html,body{height:100%;width:100%;overflow:hidden}
+body{position:relative;font-family:"Google Sans","Segoe UI",system-ui,sans-serif;color:var(--text);background:var(--bg);user-select:none;-webkit-user-select:none}
+.view{position:absolute;inset:0;opacity:0;pointer-events:none;transform:scale(.985);transition:opacity .28s ease,transform .28s ease}
+.view.active{opacity:1;pointer-events:auto;transform:scale(1)}
+.layout{display:flex;height:100%;width:100%}
+.auth{flex:0 0 340px;display:flex;flex-direction:column;justify-content:center;gap:12px;padding:0 40px;overflow-y:auto}
+.auth h1{font-size:22px;font-weight:400;margin-bottom:16px}
+#auth-guest{display:flex;flex-direction:column;gap:12px}
+#auth-user{display:none;flex-direction:column;align-items:stretch;gap:14px}
+#auth-user.visible{display:flex}
+.auth-avatar-wrap{display:flex;flex-direction:column;align-items:center}
+.auth-avatar{width:96px;height:96px;border-radius:50%;display:block;margin:0 auto 14px;background:var(--card);object-fit:cover}
+.auth-nickname{text-align:center;font-size:16px;font-weight:500;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.profiles-label{font-size:11.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--text-dim);margin-top:6px}
+.profiles-list{display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto}
+.profile-item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--card);border-radius:12px;cursor:pointer;transition:background .18s ease,transform .18s ease}
+.profile-item:hover{background:var(--card-hover);transform:translateX(2px)}
+.profile-item-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;background:#222;flex:0 0 auto}
+.profile-item-info{min-width:0;flex:1}
+.profile-item-nick{font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.profile-item-type{font-size:11.5px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.add-profile-wrap{position:relative}
+.add-profile-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:10px 14px;background:transparent;border:1px dashed #303030;border-radius:10px;color:var(--text-dim);font-family:inherit;font-size:13px;cursor:pointer;transition:color .18s ease,border-color .18s ease,background .18s ease}
+.add-profile-btn:hover{color:var(--text);border-color:#4a4a4a;background:#161616}
+.add-profile-menu{position:absolute;left:0;right:0;bottom:calc(100% + 6px);padding:6px;background:var(--card);border-radius:10px;box-shadow:0 14px 40px rgba(0,0,0,.55);opacity:0;pointer-events:none;transform:translateY(6px);transition:opacity .2s ease,transform .2s ease;z-index:50}
+.add-profile-menu.show{opacity:1;pointer-events:auto;transform:translateY(0)}
+.add-profile-item{padding:10px 14px;border-radius:8px;font-size:13.5px;cursor:pointer;transition:background .15s ease}
+.add-profile-item:hover{background:var(--card-hover)}
+.add-profile-item .sub{display:block;font-size:11.5px;color:var(--text-dim);margin-top:2px}
+.logout-btn{width:100%;padding:12px 16px;background:#f0f0f0;color:#0e0e0e;font-family:inherit;font-size:14px;font-weight:500;border-radius:10px;cursor:pointer;transition:background .18s ease}
+.logout-btn:hover{background:#fff}
+.auth-btn{display:flex;align-items:center;gap:12px;width:100%;padding:14px 18px;background:var(--card);color:var(--text);font-family:inherit;font-size:14px;border-radius:10px;cursor:pointer;text-align:left;transition:background .18s ease}
+.auth-btn:hover{background:var(--card-hover)}
+.auth-btn span{white-space:nowrap}
+.auth-btn img{width:20px;height:20px;object-fit:contain;flex:0 0 auto}
+.divider{flex:0 0 1px;background:var(--divider);align-self:stretch;margin:40px 0}
+.menu{flex:1;display:flex;align-items:center;justify-content:center;padding:40px;overflow:hidden}
+.menu-inner{width:100%;max-height:100%;transition:opacity .22s ease,transform .22s ease}
+.menu-inner.leaving{opacity:0;transform:translateY(-12px)}
+.menu-inner.entering{opacity:0;transform:translateY(12px)}
+.menu-inner[hidden]{display:none !important}
+.menu-cards{display:flex;flex-direction:row;justify-content:center;align-items:center;gap:18px;flex-wrap:wrap}
+.menu-projects{display:flex;flex-direction:column;gap:12px;max-width:640px;margin:0 auto;max-height:100%;overflow:hidden}
+.projects-title{font-size:22px;font-weight:400;text-align:center;margin-bottom:6px}
+.projects-list{display:flex;flex-direction:column;gap:8px;overflow-y:auto;padding:2px}
+.project-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:var(--card);border-radius:12px;cursor:pointer;transition:background .18s ease,transform .15s ease}
+.project-row:hover{background:var(--card-hover);transform:translateX(3px)}
+.project-row-name{font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+.project-row-folder{font-size:12px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55%;direction:rtl;text-align:right;unicode-bidi:plaintext}
+.projects-empty{padding:24px;text-align:center;color:var(--text-dim);font-size:13.5px}
+.card{flex:1 1 200px;max-width:240px;min-height:200px;padding:26px 18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--card);border-radius:16px;color:var(--text);font-family:inherit;cursor:pointer;transition:background .18s ease,transform .18s ease}
+.card:hover{background:var(--card-hover);transform:translateY(-4px)}
+.card .label{font-size:15px}
+.card .hint{font-size:12.5px;color:var(--text-dim);text-align:center;line-height:1.45}
+.icon{display:block;width:34px;height:34px;background-color:var(--text-dim);-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain;transition:background-color .18s ease}
+.card:hover .icon{background-color:var(--text)}
+.icon-recent{-webkit-mask-image:url("/Icons/file_recent.svg");mask-image:url("/Icons/file_recent.svg")}
+.icon-open{-webkit-mask-image:url("/Icons/file_open.svg");mask-image:url("/Icons/file_open.svg")}
+.icon-new{-webkit-mask-image:url("/Icons/file_new.svg");mask-image:url("/Icons/file_new.svg")}
+.icon-browse{-webkit-mask-image:url("/Icons/file_browse.svg");mask-image:url("/Icons/file_browse.svg")}
+.naming{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:40px}
+.naming-title{font-size:22px;font-weight:400;margin-bottom:12px}
+.field{width:100%;max-width:480px;padding:14px 16px;background:var(--card);color:var(--text);font-family:inherit;font-size:14px;border-radius:10px;transition:box-shadow .18s ease}
+.field:focus{box-shadow:0 0 0 1px #3a3a3a}
+.field::placeholder{color:var(--text-dim)}
+.field.invalid{box-shadow:0 0 0 1px var(--danger)}
+.folder-row{width:100%;max-width:480px;display:flex;gap:8px}
+.folder-row .field{max-width:none;flex:1}
+.icon-btn{flex:0 0 auto;width:48px;display:flex;align-items:center;justify-content:center;background:var(--card);border-radius:10px;cursor:pointer}
+.icon-btn:hover{background:var(--card-hover)}
+.icon-btn .icon{width:22px;height:22px}
+.continue-btn{margin-top:12px;width:100%;max-width:480px;padding:14px 16px;background:#f0f0f0;color:#0e0e0e;font-family:inherit;font-size:14px;border-radius:10px;cursor:pointer}
+.continue-btn:hover:not(:disabled){background:#fff}
+.continue-btn:disabled{opacity:.35;cursor:not-allowed}
+.cancel-btn{width:100%;max-width:480px;padding:14px 16px;background:var(--card);color:var(--text);font-family:inherit;font-size:14px;border-radius:10px;cursor:pointer}
+.cancel-btn:hover{background:var(--card-hover)}
+.setup{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:40px}
+.setup-avatar-wrap{position:relative;width:128px;height:128px;cursor:pointer;border-radius:50%;overflow:hidden;transition:transform .2s ease}
+.setup-avatar-wrap:hover{transform:scale(1.03)}
+.setup-avatar{width:100%;height:100%;object-fit:cover;border-radius:50%;background:#1a1a1a;display:block}
+.setup-avatar-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);color:#fff;font-size:12.5px;font-weight:500;opacity:0;transition:opacity .2s ease;border-radius:50%}
+.setup-avatar-wrap:hover .setup-avatar-overlay{opacity:1}
+.setup-title{font-size:22px;font-weight:400;margin-bottom:12px}
+.setup-hint{font-size:12px;color:var(--text-dim);max-width:480px;width:100%;text-align:center}
+.setup-hint.error{color:var(--danger)}
+.avatar-modal{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:3000;opacity:0;pointer-events:none;transition:opacity .22s ease}
+.avatar-modal.show{opacity:1;pointer-events:auto}
+.avatar-modal-content{width:100%;max-width:360px;padding:24px;background:#161616;border-radius:16px;display:flex;flex-direction:column;gap:18px;transform:scale(.96);transition:transform .22s ease}
+.avatar-modal.show .avatar-modal-content{transform:scale(1)}
+.avatar-modal-title{font-size:15px;font-weight:500;text-align:center}
+.avatar-crop-wrap{display:flex;justify-content:center}
+#avatar-crop-canvas{width:240px;height:240px;border-radius:50%;background:#0b0b0b;touch-action:none}
+#avatar-zoom{width:100%;accent-color:#f0f0f0;cursor:pointer}
+.avatar-modal-actions{display:flex;flex-direction:column;gap:10px}
+.modal-btn{width:100%;padding:12px 16px;background:#222;color:var(--text);font-family:inherit;font-size:14px;border-radius:10px;cursor:pointer}
+.modal-btn:hover{background:#2e2e2e}
+.modal-btn.primary{background:#f0f0f0;color:#0e0e0e}
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(16px);max-width:80%;padding:12px 18px;background:var(--card);border-radius:12px;font-size:13.5px;opacity:0;pointer-events:none;transition:opacity .25s ease,transform .25s ease;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;z-index:10}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#ctx{position:fixed;min-width:200px;padding:6px;background:#1a1a1a;border-radius:10px;font-size:13.5px;color:var(--text);box-shadow:0 14px 40px rgba(0,0,0,.55);opacity:0;pointer-events:none;transform:scale(.97);transform-origin:top left;transition:opacity .2s ease,transform .2s ease;z-index:1000}
+#ctx.show{opacity:1;pointer-events:auto;transform:scale(1)}
+.ctx-item{position:relative;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:8px 12px;border-radius:6px;cursor:pointer;white-space:nowrap;transition:background .15s ease}
+.ctx-item:hover{background:var(--card-hover)}
+.ctx-sep{height:1px;background:var(--divider);margin:4px 8px}
+.ctx-arrow{color:var(--text-dim);font-size:16px}
+.ctx-shortcut{color:var(--text-dim);font-size:12px}
+.ctx-sub{position:absolute;left:100%;top:-6px;margin-left:4px;min-width:150px;padding:6px;background:#1a1a1a;border-radius:10px;box-shadow:0 14px 40px rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .2s ease;z-index:1001}
+.ctx-item.has-sub:hover .ctx-sub{opacity:1;pointer-events:auto}
+.auth,.profiles-list,.projects-list{scrollbar-width:none;-ms-overflow-style:none}
+.auth::-webkit-scrollbar,.profiles-list::-webkit-scrollbar,.projects-list::-webkit-scrollbar{width:0;height:0;display:none}
+</style></head><body>
+
+<div id="view-menu" class="view active"><div class="layout">
+<aside class="auth">
+<div id="auth-guest">
+<h1>Регистрация</h1>
+<button class="auth-btn" data-action="login-google"><img src="/Icons/google.png" alt=""><span>Войти с помощью Google</span></button>
+<button class="auth-btn" data-action="login-telegram"><img src="/Icons/telegram.png" alt=""><span>Войти с помощью Telegram</span></button>
+</div>
+<div id="auth-user">
+<div class="auth-avatar-wrap">
+<img id="auth-avatar" class="auth-avatar" alt="">
+<div id="auth-nickname" class="auth-nickname"></div>
+</div>
+<div class="profiles-label" id="profiles-label">Профили</div>
+<div id="profiles-list" class="profiles-list"></div>
+<div class="add-profile-wrap">
+<button id="add-profile-btn" class="add-profile-btn">+ Добавить профиль</button>
+<div id="add-profile-menu" class="add-profile-menu">
+<div class="add-profile-item" data-add="autonomous">Автономный<span class="sub">Профиль без Google-аккаунта</span></div>
+<div class="add-profile-item" data-add="authorized">Авторизованный<span class="sub">Войти с другим Google-аккаунтом</span></div>
+</div>
+</div>
+<button id="logout-btn" class="logout-btn">Выйти из аккаунта</button>
+</div>
+</aside>
+<div class="divider"></div>
+<main class="menu">
+<div id="menu-cards" class="menu-inner menu-cards">
+<button class="card" data-action="open-last"><i class="icon icon-recent"></i><span class="label">Открыть последний проект</span><span class="hint">Продолжить с того места, где остановился</span></button>
+<button class="card" data-action="open"><i class="icon icon-open"></i><span class="label">Открыть проект</span><span class="hint">Выбрать из сохранённых</span></button>
+<button class="card" data-action="new"><i class="icon icon-new"></i><span class="label">Создать новый проект</span><span class="hint">Создать папку и настроить всё с нуля</span></button>
+</div>
+<div id="menu-projects" class="menu-inner menu-projects" hidden>
+<div class="projects-title">Ваши проекты</div>
+<div id="projects-list" class="projects-list"></div>
+<button id="projects-cancel" class="cancel-btn">Отмена</button>
+</div>
+</main></div></div>
+
+<div id="view-naming" class="view"><div class="naming">
+<h2 class="naming-title">Назовите ваш проект</h2>
+<input id="project-name" class="field" type="text" placeholder="Название проекта" autocomplete="off" spellcheck="false">
+<div class="folder-row">
+<input id="project-folder" class="field" type="text" readonly placeholder="Папка проекта">
+<button id="browse-btn" class="icon-btn"><i class="icon icon-browse"></i></button>
+</div>
+<button id="continue-btn" class="continue-btn">Продолжить</button>
+<button id="cancel-btn" class="cancel-btn">Отмена</button>
+</div></div>
+
+<div id="view-setup" class="view"><div class="setup">
+<div class="setup-avatar-wrap" id="setup-avatar-wrap">
+<img id="setup-avatar" class="setup-avatar" alt="">
+<div class="setup-avatar-overlay">Сменить</div>
+</div>
+<h2 class="setup-title">Настройка профиля</h2>
+<input id="setup-nickname" class="field" type="text" placeholder="Никнейм (латиница)" autocomplete="off" spellcheck="false">
+<div id="setup-hint" class="setup-hint">Только латинские буквы, цифры, _ - .</div>
+<button id="setup-confirm" class="continue-btn" disabled>Подтвердить</button>
+<input type="file" id="avatar-file-input" accept="image/*" hidden>
+</div></div>
+
+<div id="avatar-modal" class="avatar-modal"><div class="avatar-modal-content">
+<div class="avatar-modal-title">Настройка аватарки</div>
+<div class="avatar-crop-wrap"><canvas id="avatar-crop-canvas" width="240" height="240"></canvas></div>
+<input type="range" id="avatar-zoom" min="0.5" max="3" step="0.01" value="1">
+<div class="avatar-modal-actions">
+<button id="avatar-save" class="modal-btn primary">Сохранить</button>
+<button id="avatar-cancel" class="modal-btn">Отмена</button>
+</div></div></div>
+
+<div id="toast"></div>
+<div id="ctx">
+<div class="ctx-item has-sub"><span>Проект</span><span class="ctx-arrow">›</span>
+<div class="ctx-sub">
+<div class="ctx-item" data-ctx="open">Открыть</div>
+<div class="ctx-item" data-ctx="new">Создать</div>
+<div class="ctx-item" data-ctx="delete">Удалить</div>
+</div></div>
+<div class="ctx-sep"></div>
+<div class="ctx-item" data-ctx="exit"><span>Выйти</span><span class="ctx-shortcut">alt + F4</span></div>
+</div>
+
+<script>
+const toast=document.getElementById("toast");let timer=null;
+const state={baseDir:"",userPickedDir:null};
+let currentState={activeId:null,active:null,profiles:[]};
+let pendingSetupProfile=null;let pendingAvatarData=null;
+
+function showToast(t){toast.textContent=t;toast.classList.add("show");clearTimeout(timer);timer=setTimeout(()=>toast.classList.remove("show"),4500);}
+function escapeHtml(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
+function showView(id){document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));document.getElementById(id).classList.add("active");}
+function switchMenuView(target){const c=document.getElementById("menu-cards"),p=document.getElementById("menu-projects");const toProjs=target==="projects";const hideEl=toProjs?c:p,showEl=toProjs?p:c;if(showEl.hidden===false)return;hideEl.classList.add("leaving");setTimeout(()=>{hideEl.hidden=true;hideEl.classList.remove("leaving");showEl.hidden=false;showEl.classList.add("entering");requestAnimationFrame(()=>requestAnimationFrame(()=>showEl.classList.remove("entering")));},220);}
+function renderProjects(list){const el=document.getElementById("projects-list");el.innerHTML="";if(!list||list.length===0){const e=document.createElement("div");e.className="projects-empty";e.textContent="Пока нет ни одного проекта";el.appendChild(e);return;}list.forEach((p,i)=>{const row=document.createElement("div");row.className="project-row";row.innerHTML='<span class="project-row-name">'+escapeHtml(p.name)+'</span><span class="project-row-folder">'+escapeHtml(p.folder)+'</span>';row.addEventListener("click",()=>window.chrome.webview.postMessage(JSON.stringify({action:"open-project",folder:p.folder})));el.appendChild(row);});}
+document.getElementById("projects-cancel").addEventListener("click",()=>switchMenuView("cards"));
+function resetNaming(){state.userPickedDir=null;document.getElementById("project-name").value="";document.getElementById("project-folder").value="";}
+function startNewFlow(){resetNaming();document.getElementById("view-menu").classList.remove("active");window.chrome.webview.postMessage("get-defaults");setTimeout(()=>{showView("view-naming");document.getElementById("project-name").focus();},200);}
+function cancelNewFlow(){resetNaming();switchMenuView("cards");showView("view-menu");}
+function updateFolderField(){const n=document.getElementById("project-name").value.trim();const f=document.getElementById("project-folder");if(state.userPickedDir)f.value=n?state.userPickedDir+"\\"+n:state.userPickedDir;else if(state.baseDir)f.value=n?state.baseDir+"\\"+n:state.baseDir;}
+document.getElementById("project-name").addEventListener("input",updateFolderField);
+document.getElementById("browse-btn").addEventListener("click",()=>window.chrome.webview.postMessage("browse-folder"));
+document.getElementById("continue-btn").addEventListener("click",()=>{const n=document.getElementById("project-name").value.trim();const f=document.getElementById("project-folder").value.trim();window.chrome.webview.postMessage(JSON.stringify({action:"create-project",name:n,folder:f}));});
+document.getElementById("cancel-btn").addEventListener("click",cancelNewFlow);
+document.querySelectorAll("[data-action]").forEach(btn=>btn.addEventListener("click",()=>{const a=btn.dataset.action;if(a==="new"){startNewFlow();return;}window.chrome.webview.postMessage(a);}));
+function renderState(msg){currentState={activeId:msg.activeId||null,active:msg.active||null,profiles:msg.profiles||[]};const g=document.getElementById("auth-guest"),u=document.getElementById("auth-user");if(currentState.active){g.style.display="none";u.classList.add("visible");const a=document.getElementById("auth-avatar");a.src=currentState.active.avatar||"";a.style.display=currentState.active.avatar?"":"none";document.getElementById("auth-nickname").textContent=currentState.active.nickname||currentState.active.email||"";renderProfilesList();}else{g.style.display="";u.classList.remove("visible");}}
+function renderProfilesList(){const l=document.getElementById("profiles-list"),lb=document.getElementById("profiles-label");l.innerHTML="";const o=currentState.profiles.filter(p=>p.id!==currentState.activeId);if(o.length===0){l.style.display="none";lb.style.display="none";return;}l.style.display="";lb.style.display="";o.forEach((p,i)=>{const item=document.createElement("div");item.className="profile-item";const sub=p.type==="authorized"?("Google · "+(p.email||"")):"Автономный";item.innerHTML='<img class="profile-item-avatar" src="'+escapeHtml(p.avatar||"")+'" alt=""><div class="profile-item-info"><div class="profile-item-nick">'+escapeHtml(p.nickname||p.email||"Профиль")+'</div><div class="profile-item-type">'+escapeHtml(sub)+'</div></div>';item.addEventListener("click",()=>window.chrome.webview.postMessage(JSON.stringify({action:"select-profile",id:p.id})));l.appendChild(item);});}
+function showSetup(profile){pendingSetupProfile=profile;pendingAvatarData=null;const a=document.getElementById("setup-avatar");if(profile&&profile.avatar){a.src=profile.avatar;a.style.display="";}else a.removeAttribute("src");const n=document.getElementById("setup-nickname");n.value=(profile&&profile.nickname)||"";validateNickname();switchMenuView("cards");showView("view-setup");setTimeout(()=>n.focus(),250);}
+function validateNickname(){const el=document.getElementById("setup-nickname");const v=el.value.trim();const valid=v.length>0&&/^[A-Za-z0-9_.\-]+$/.test(v);document.getElementById("setup-confirm").disabled=!valid;el.classList.toggle("invalid",v.length>0&&!valid);const h=document.getElementById("setup-hint");if(v.length>0&&!valid){h.textContent="Только латинские буквы, цифры, _ - . (без пробелов)";h.classList.add("error");}else{h.textContent="Только латинские буквы, цифры, _ - .";h.classList.remove("error");}}
+document.getElementById("setup-nickname").addEventListener("input",validateNickname);
+document.getElementById("setup-confirm").addEventListener("click",()=>{const n=document.getElementById("setup-nickname").value.trim();window.chrome.webview.postMessage(JSON.stringify({action:"save-profile",nickname:n,avatarData:pendingAvatarData||""}));});
+document.getElementById("setup-avatar-wrap").addEventListener("click",()=>document.getElementById("avatar-file-input").click());
+document.getElementById("avatar-file-input").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>openCropModal(r.result);r.readAsDataURL(f);e.target.value="";});
+let cropImage=null,cropZoom=1;
+function openCropModal(u){const img=new Image();img.onload=()=>{cropImage=img;cropZoom=1;document.getElementById("avatar-zoom").value="1";drawCrop();document.getElementById("avatar-modal").classList.add("show");};img.src=u;}
+function drawCrop(){const c=document.getElementById("avatar-crop-canvas");const ctx=c.getContext("2d");const s=c.width;ctx.clearRect(0,0,s,s);if(!cropImage)return;const m=Math.min(cropImage.width,cropImage.height);const bs=s/m;const sc=bs*cropZoom;const dw=cropImage.width*sc,dh=cropImage.height*sc;const dx=(s-dw)/2,dy=(s-dh)/2;ctx.save();ctx.beginPath();ctx.arc(s/2,s/2,s/2,0,Math.PI*2);ctx.clip();ctx.drawImage(cropImage,dx,dy,dw,dh);ctx.restore();ctx.strokeStyle="rgba(255,255,255,.18)";ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(s/2,s/2,s/2-1,0,Math.PI*2);ctx.stroke();}
+document.getElementById("avatar-zoom").addEventListener("input",e=>{cropZoom=parseFloat(e.target.value)||1;drawCrop();});
+document.getElementById("avatar-save").addEventListener("click",()=>{const c=document.getElementById("avatar-crop-canvas");pendingAvatarData=c.toDataURL("image/png");document.getElementById("setup-avatar").src=pendingAvatarData;document.getElementById("avatar-modal").classList.remove("show");});
+document.getElementById("avatar-cancel").addEventListener("click",()=>document.getElementById("avatar-modal").classList.remove("show"));
+document.getElementById("add-profile-btn").addEventListener("click",e=>{e.stopPropagation();document.getElementById("add-profile-menu").classList.toggle("show");});
+document.querySelectorAll("[data-add]").forEach(el=>el.addEventListener("click",e=>{e.stopPropagation();document.getElementById("add-profile-menu").classList.remove("show");const k=el.dataset.add;if(k==="autonomous")window.chrome.webview.postMessage("add-autonomous");else if(k==="authorized")window.chrome.webview.postMessage("login-google");}));
+document.addEventListener("click",()=>{const m=document.getElementById("add-profile-menu");if(m)m.classList.remove("show");});
+document.getElementById("logout-btn").addEventListener("click",()=>window.chrome.webview.postMessage("logout"));
+window.chrome.webview.addEventListener("message",e=>{const d=e.data;if(typeof d==="string"&&d.startsWith("{")){try{const m=JSON.parse(d);if(m.type==="state"){renderState(m);showView("view-menu");return;}if(m.type==="setup"){showSetup(m.profile);return;}if(m.type==="projects"){renderProjects(m.projects);showView("view-menu");switchMenuView("projects");return;}if(m.type==="defaults"){state.baseDir=m.baseDir||"";updateFolderField();return;}if(m.type==="folder-picked"){state.userPickedDir=m.path||null;updateFolderField();return;}}catch{}}showToast(d);});
+const ctx=document.getElementById("ctx");let ctxOpen=false;
+document.addEventListener("contextmenu",e=>{e.preventDefault();if(ctxOpen){hideCtx();return;}showCtx(e.clientX,e.clientY);});
+function showCtx(x,y){ctx.classList.add("show");ctxOpen=true;const r=ctx.getBoundingClientRect();const mx=window.innerWidth-r.width-6;const my=window.innerHeight-r.height-6;ctx.style.left=Math.min(x,mx)+"px";ctx.style.top=Math.min(y,my)+"px";}
+function hideCtx(){ctx.classList.remove("show");ctxOpen=false;}
+document.addEventListener("mousedown",e=>{if(ctxOpen&&!ctx.contains(e.target))hideCtx();});
+window.addEventListener("blur",hideCtx);window.addEventListener("resize",hideCtx);window.addEventListener("wheel",hideCtx,{passive:true});
+ctx.querySelectorAll("[data-ctx]").forEach(item=>item.addEventListener("click",e=>{e.stopPropagation();const a=item.dataset.ctx;hideCtx();switch(a){case "open":window.chrome.webview.postMessage("open");break;case "new":startNewFlow();break;case "delete":showToast("Заглушка: удаление");break;case "exit":window.chrome.webview.postMessage("exit");break;}}));
+window.addEventListener("wheel",e=>{if(e.ctrlKey)e.preventDefault();},{passive:false});
+window.addEventListener("keydown",e=>{if(e.ctrlKey&&(e.key==="+"||e.key==="-"))e.preventDefault();});
+window.chrome.webview.postMessage("main-ready");
+</script></body></html>

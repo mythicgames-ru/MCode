@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 7 7" width="100%" height="100%" shape-rendering="crispEdges">
+  <style>
+    .font-grey { fill: #666666; }
+    .inner-shadow { fill: #0d0d0d; opacity: 0.3; }
+  </style>
+
+  <!-- Тень для иконки терминала -->
+  <path class="inner-shadow" d="M2 2h1v1H2zm1 1h1v1H3zm0 2h1v1H4zm-1 1h1v1H3zm2 1h1v1H5z" />
+
+  <!-- Новая иконка в виде консольного ввода >_ -->
+  <path class="font-grey" d="M1 1h1v1H1zm1 1h1v1H2zm1 1h1v1H3zm-1 1h1v1H2zm-1 1h1v1H1zm3 1h2v1H4z" />
+</svg>
