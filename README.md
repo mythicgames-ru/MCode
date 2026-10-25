@@ -36,7 +36,7 @@ MCode Editor combines the performance of native Windows applications with the fl
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/MCode-Editor.git
+   git clone https://github.com/mythicgames-ru/MCode.git
    cd MCode-Editor
    ```
 
