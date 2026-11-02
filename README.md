@@ -1,4 +1,22 @@
-<div align="center"># ⚡ MCode Editor**A modern, lightweight desktop code editor built with C# (.NET 8) and WebView2.**MCode Editor combines the performance of native Windows applications with the flexibility and modern UI capabilities of web technologies. It provides a sleek, dark-themed workspace with an integrated terminal, file explorer, and an extensible chat workspace.![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat-square&logo=dotnet&logoColor=white)![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0078D6?style=flat-square&logo=windows&logoColor=white)![Engine](https://img.shields.io/badge/Engine-WebView2%20%28Chromium%29-0F7B6C?style=flat-square&logo=microsoftedge&logoColor=white)![License](https://img.shields.io/badge/License-MIT-3DA639?style=flat-square)![Stars](https://img.shields.io/github/stars/mythicgames-ru/MCode?style=flat-square&color=F7B32B)<img src="screenshot.png" alt="MCode Editor Screenshot" width="820"></div>
+<div align="center">
+
+# ⚡ MCode Editor
+
+**A modern, lightweight desktop code editor built with C# (.NET 8) and WebView2.**
+
+MCode Editor combines the performance of native Windows applications with the flexibility and modern UI capabilities of web technologies. It provides a sleek, dark-themed workspace with an integrated terminal, file explorer, and an extensible chat workspace.
+
+![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat-square&logo=dotnet&logoColor=white)
+![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0078D6?style=flat-square&logo=windows&logoColor=white)
+![Engine](https://img.shields.io/badge/Engine-WebView2%20%28Chromium%29-0F7B6C?style=flat-square&logo=microsoftedge&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-3DA639?style=flat-square)
+![Stars](https://img.shields.io/github/stars/mythicgames-ru/MCode?style=flat-square&color=F7B32B)
+
+<p align="center">
+  <img src="screenshot.png" alt="MCode Editor Screenshot" width="820">
+</p>
+
+</div>
 
 
 ## Features
